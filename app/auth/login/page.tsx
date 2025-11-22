@@ -58,36 +58,42 @@ export default function LoginPage() {
         // Login bem-sucedido - redirecionar imediatamente
         console.log('Login bem-sucedido:', data.user.id);
         
-        // Tentar criar perfil em background (não bloquear o login)
-        supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', data.user.id)
-          .maybeSingle()
-          .then(({ data: profile }) => {
-            if (!profile) {
-              // Tentar criar perfil - não esperar resultado
-              supabase.rpc('create_user_profile', {
-                p_user_id: data.user.id,
-                p_email: data.user.email || email,
-                p_name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
-              }).catch(() => {
-                // Se RPC falhar, tentar inserção direta
-                supabase.from('profiles').insert({
-                  id: data.user.id,
-                  email: data.user.email || email,
-                  name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
-                  role: 'elaborador',
-                }).catch(() => {
-                  // Ignorar erros - perfil pode ser criado depois
-                  console.warn('Não foi possível criar perfil automaticamente');
-                });
-              });
-            }
-          })
-          .catch(() => {
-            // Ignorar erros - não bloquear login
-          });
+            // Tentar criar perfil em background (não bloquear o login)
+            (async () => {
+              try {
+                const { data: profile } = await supabase
+                  .from('profiles')
+                  .select('id')
+                  .eq('id', data.user.id)
+                  .maybeSingle();
+
+                if (!profile) {
+                  // Tentar criar perfil - não esperar resultado
+                  try {
+                    await supabase.rpc('create_user_profile', {
+                      p_user_id: data.user.id,
+                      p_email: data.user.email || email,
+                      p_name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
+                    });
+                  } catch {
+                    // Se RPC falhar, tentar inserção direta
+                    try {
+                      await supabase.from('profiles').insert({
+                        id: data.user.id,
+                        email: data.user.email || email,
+                        name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
+                        role: 'elaborador',
+                      });
+                    } catch {
+                      // Ignorar erros - perfil pode ser criado depois
+                      console.warn('Não foi possível criar perfil automaticamente');
+                    }
+                  }
+                }
+              } catch {
+                // Ignorar erros - não bloquear login
+              }
+            })();
         
         // Redirecionar imediatamente - não esperar criação de perfil
         window.location.href = '/dashboard';

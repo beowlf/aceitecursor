@@ -312,7 +312,7 @@ export default function DiagnosticoPage() {
                     <li>Verifique se o arquivo <code className="bg-blue-100 px-1 rounded">.env.local</code> existe na raiz do projeto</li>
                     <li>Certifique-se de que as variáveis <code className="bg-blue-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> e <code className="bg-blue-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> estão configuradas</li>
                     <li>Execute o arquivo <code className="bg-blue-100 px-1 rounded">supabase/setup_completo.sql</code> no SQL Editor do Supabase (IMPORTANTE!)</li>
-                    <li>Desabilite a confirmação de email em <strong>Authentication > Settings</strong> no Supabase</li>
+                    <li>Desabilite a confirmação de email em <strong>Authentication {'>'} Settings</strong> no Supabase</li>
                     <li>Se você já criou uma conta, crie o perfil manualmente (veja CONFIGURAR_SUPABASE.md)</li>
                     <li>Após fazer alterações, reinicie o servidor: <code className="bg-blue-100 px-1 rounded">npm run dev</code></li>
                   </ol>
