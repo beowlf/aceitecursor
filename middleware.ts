@@ -8,77 +8,100 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // ============================================
-  // MODO DESENVOLVIMENTO: PERMITIR ACESSO TOTAL
-  // TODO: Reativar autenticação depois
-  // ============================================
-  
-  // TEMPORARIAMENTE: Permitir acesso a todas as rotas sem verificar autenticação
-  // Isso permite trabalhar sem bloqueios
-  console.log(`[MIDDLEWARE] Permitindo acesso a: ${request.nextUrl.pathname}`);
-  return response;
-
-  /* CÓDIGO ORIGINAL COMENTADO - REATIVAR DEPOIS
+  // Rotas públicas que não precisam de autenticação
   const publicRoutes = ['/auth/login', '/auth/register', '/diagnostico'];
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 
+  // Permitir acesso a rotas públicas
   if (isPublicRoute) {
+    // Se o usuário já está autenticado e tenta acessar login/register, redirecionar para dashboard
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return request.cookies.get(name)?.value;
+            },
+            set(name: string, value: string, options: any) {
+              request.cookies.set(name, value);
+              response = NextResponse.next({
+                request,
+              });
+              response.cookies.set(name, value, options);
+            },
+            remove(name: string, options: any) {
+              request.cookies.delete(name);
+              response = NextResponse.next({
+                request,
+              });
+              response.cookies.set(name, '', { ...options, maxAge: 0 });
+            },
+          },
+        }
+      );
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && (request.nextUrl.pathname.startsWith('/auth/login') || request.nextUrl.pathname.startsWith('/auth/register'))) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/dashboard';
+        return NextResponse.redirect(url);
+      }
+    } catch (error) {
+      // Ignorar erros em rotas públicas
+    }
     return response;
   }
 
+  // Verificar autenticação para rotas protegidas
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return request.cookies.getAll();
+          get(name: string) {
+            return request.cookies.get(name)?.value;
           },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+          set(name: string, value: string, options: any) {
+            request.cookies.set(name, value);
             response = NextResponse.next({
               request,
             });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
+            response.cookies.set(name, value, options);
+          },
+          remove(name: string, options: any) {
+            request.cookies.delete(name);
+            response = NextResponse.next({
+              request,
+            });
+            response.cookies.set(name, '', { ...options, maxAge: 0 });
           },
         },
       }
     );
 
-    let user = null;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      user = session?.user;
-    } catch (error) {
-      console.warn('Erro ao verificar sessão:', error);
-      return response;
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
 
-    if (user && isPublicRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
-      return NextResponse.redirect(url);
-    }
-
-    if (user) {
-      return response;
-    }
-
-    if (!user && !isPublicRoute) {
+    // Se não há usuário autenticado, redirecionar para login
+    if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = '/auth/login';
+      url.searchParams.set('redirect', request.nextUrl.pathname);
       return NextResponse.redirect(url);
     }
 
+    // Usuário autenticado - permitir acesso
     return response;
   } catch (error) {
     console.error('Erro no middleware:', error);
-    return response;
+    // Em caso de erro, redirecionar para login
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/login';
+    return NextResponse.redirect(url);
   }
-  */
 }
 
 export const config = {
@@ -93,9 +116,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
-
-
-
-
-
-

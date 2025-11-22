@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
-import { TrabalhoTipo } from '@/types/database';
+import { TrabalhoTipo, Profile } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +14,8 @@ export default function NovoTrabalhoPage() {
   const supabase = createClient();
   
   const [loading, setLoading] = useState(false);
+  const [elaboradores, setElaboradores] = useState<Profile[]>([]);
+  const [loadingElaboradores, setLoadingElaboradores] = useState(true);
   const [formData, setFormData] = useState({
     titulo: '',
     tipo: 'tcc' as TrabalhoTipo,
@@ -23,7 +25,29 @@ export default function NovoTrabalhoPage() {
     tem_correcoes_obrigatorias: true,
     prazo_entrega: '',
     termos: '',
+    elaborador_id: '' as string | undefined,
   });
+
+  useEffect(() => {
+    loadElaboradores();
+  }, []);
+
+  async function loadElaboradores() {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .eq('role', 'elaborador')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setElaboradores(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar elaboradores:', error);
+    } finally {
+      setLoadingElaboradores(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,10 +75,17 @@ export default function NovoTrabalhoPage() {
       const { data, error } = await supabase
         .from('trabalhos')
         .insert({
-          ...formData,
-          responsavel_id: user.id,
-          status: 'pendente',
+          titulo: formData.titulo,
+          tipo: formData.tipo,
+          descricao: formData.descricao,
+          link_original: formData.link_original,
+          feito_do_zero: formData.feito_do_zero,
+          tem_correcoes_obrigatorias: formData.tem_correcoes_obrigatorias,
           prazo_entrega: new Date(formData.prazo_entrega).toISOString(),
+          termos: formData.termos,
+          responsavel_id: user.id,
+          elaborador_id: formData.elaborador_id || null,
+          status: 'pendente',
         })
         .select()
         .single();
@@ -137,6 +168,40 @@ export default function NovoTrabalhoPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Elaborador *
+                </label>
+                {loadingElaboradores ? (
+                  <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                    <span className="text-gray-500">Carregando elaboradores...</span>
+                  </div>
+                ) : elaboradores.length === 0 ? (
+                  <div className="w-full px-4 py-2 border border-yellow-300 rounded-lg bg-yellow-50">
+                    <span className="text-yellow-700 text-sm">
+                      Nenhum elaborador cadastrado. O trabalho será criado sem atribuição.
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={formData.elaborador_id}
+                    onChange={(e) => setFormData({ ...formData, elaborador_id: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">Selecione um elaborador</option>
+                    {elaboradores.map((elab) => (
+                      <option key={elab.id} value={elab.id}>
+                        {elab.name} ({elab.email})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Selecione o elaborador que irá executar este trabalho. Ele precisará aceitar os termos antes de começar.
+                </p>
               </div>
 
               <div>

@@ -85,31 +85,48 @@ export default function DashboardPage() {
 
   async function loadUser() {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        // Usuário não autenticado - redirecionar para login
+        router.push('/auth/login');
+        return;
+      }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Erro ao buscar perfil:', profileError);
+        setLoading(false);
+        return;
+      }
 
       if (profile) {
         setUser(profile);
         // Redirecionar para dashboard específico baseado no role
         if (profile.role === 'responsavel') {
-          router.push('/dashboard/responsavel');
+          router.replace('/dashboard/responsavel');
           return;
         } else if (profile.role === 'elaborador') {
-          router.push('/dashboard/elaborador');
+          router.replace('/dashboard/elaborador');
           return;
         } else if (profile.role === 'admin') {
-          router.push('/dashboard/admin');
+          router.replace('/dashboard/admin');
           return;
         }
+      } else {
+        // Perfil não encontrado - tentar criar
+        console.warn('Perfil não encontrado para usuário:', authUser.id);
+        // Redirecionar para login ou mostrar erro
+        setLoading(false);
       }
     } catch (error) {
       console.error('Erro ao carregar usuário:', error);
+      setLoading(false);
     } finally {
       setLoading(false);
     }

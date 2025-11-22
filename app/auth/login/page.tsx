@@ -57,48 +57,87 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        // Login bem-sucedido - redirecionar imediatamente
+        // Login bem-sucedido
         console.log('Login bem-sucedido:', data.user.id);
         
-            // Tentar criar perfil em background (não bloquear o login)
-            (async () => {
-              try {
-                const { data: profile } = await supabase
-                  .from('profiles')
-                  .select('id')
-                  .eq('id', data.user.id)
-                  .maybeSingle();
+        // Buscar perfil do usuário para determinar o role e redirecionar corretamente
+        try {
+          // Aguardar um pouco para garantir que a sessão está estabelecida
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('id', data.user.id)
+            .maybeSingle();
 
-                if (!profile) {
-                  // Tentar criar perfil - não esperar resultado
-                  try {
-                    await supabase.rpc('create_user_profile', {
-                      p_user_id: data.user.id,
-                      p_email: data.user.email || email,
-                      p_name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
-                    });
-                  } catch {
-                    // Se RPC falhar, tentar inserção direta
-                    try {
-                      await supabase.from('profiles').insert({
-                        id: data.user.id,
-                        email: data.user.email || email,
-                        name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
-                        role: 'elaborador',
-                      });
-                    } catch {
-                      // Ignorar erros - perfil pode ser criado depois
-                      console.warn('Não foi possível criar perfil automaticamente');
-                    }
-                  }
+          if (profile) {
+            // Perfil existe - redirecionar baseado no role
+            if (profile.role === 'responsavel') {
+              window.location.href = '/dashboard/responsavel';
+            } else if (profile.role === 'elaborador') {
+              window.location.href = '/dashboard/elaborador';
+            } else if (profile.role === 'admin') {
+              window.location.href = '/dashboard/admin';
+            } else {
+              // Role desconhecido - ir para dashboard geral
+              window.location.href = '/dashboard';
+            }
+          } else {
+            // Perfil não existe - tentar criar
+            try {
+              const { error: createError } = await supabase.rpc('create_user_profile', {
+                p_user_id: data.user.id,
+                p_email: data.user.email || email,
+                p_name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
+              });
+
+              if (createError) {
+                // Se RPC falhar, tentar inserção direta
+                const { error: insertError } = await supabase.from('profiles').insert({
+                  id: data.user.id,
+                  email: data.user.email || email,
+                  name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
+                  role: 'elaborador', // Role padrão
+                });
+
+                if (insertError) {
+                  console.warn('Não foi possível criar perfil:', insertError);
+                  // Mesmo assim, redirecionar para dashboard
+                  window.location.href = '/dashboard';
+                } else {
+                  // Perfil criado - redirecionar para dashboard do elaborador (padrão)
+                  window.location.href = '/dashboard/elaborador';
                 }
-              } catch {
-                // Ignorar erros - não bloquear login
+              } else {
+                // Perfil criado via RPC - buscar novamente para obter o role
+                const { data: newProfile } = await supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', data.user.id)
+                  .single();
+                
+                if (newProfile?.role === 'responsavel') {
+                  window.location.href = '/dashboard/responsavel';
+                } else if (newProfile?.role === 'elaborador') {
+                  window.location.href = '/dashboard/elaborador';
+                } else if (newProfile?.role === 'admin') {
+                  window.location.href = '/dashboard/admin';
+                } else {
+                  window.location.href = '/dashboard';
+                }
               }
-            })();
-        
-        // Redirecionar imediatamente - não esperar criação de perfil
-        window.location.href = '/dashboard';
+            } catch (createErr) {
+              console.error('Erro ao criar perfil:', createErr);
+              // Mesmo com erro, redirecionar para dashboard
+              window.location.href = '/dashboard';
+            }
+          }
+        } catch (err) {
+          console.error('Erro ao buscar perfil:', err);
+          // Em caso de erro, redirecionar para dashboard geral
+          window.location.href = '/dashboard';
+        }
       }
     } catch (err: any) {
       console.error('Erro completo no login:', err);
