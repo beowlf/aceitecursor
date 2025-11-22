@@ -9,6 +9,8 @@ import { Trabalho } from '@/types/database';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default function ProgramaPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);

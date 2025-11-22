@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { CheckCircle, XCircle, AlertCircle, Loader } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 interface DiagnosticResult {
   name: string;
   status: 'checking' | 'success' | 'error';

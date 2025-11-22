@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Trabalho, Entrega } from '@/types/database';
 import { formatDate } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 export default function SolicitarCorrecaoPage() {
   const params = useParams();
   const router = useRouter();

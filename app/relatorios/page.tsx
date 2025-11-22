@@ -11,6 +11,8 @@ import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { FileText, AlertCircle, Download, TrendingDown, CheckCircle, Clock } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function RelatoriosPage() {
   const [stats, setStats] = useState({
     totalTrabalhos: 0,
@@ -39,10 +41,10 @@ export default function RelatoriosPage() {
 
       if (trabalhos) {
         const total = trabalhos.length;
-        const concluidos = trabalhos.filter(t => t.status === 'concluido');
-        const pendentes = trabalhos.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
+        const concluidos = trabalhos.filter((t: any) => t.status === 'concluido');
+        const pendentes = trabalhos.filter((t: any) => t.status === 'pendente' || t.status === 'em_andamento').length;
         const hoje = new Date();
-        const atrasados = trabalhos.filter(t => {
+        const atrasados = trabalhos.filter((t: any) => {
           const prazo = new Date(t.prazo_entrega);
           return prazo < hoje && t.status !== 'concluido';
         });
@@ -55,11 +57,11 @@ export default function RelatoriosPage() {
           .from('correcoes')
           .select('trabalho_id, elaborador_id, status');
 
-        const trabalhosComCorrecao = new Set(correcoes?.map(c => c.trabalho_id) || []);
+        const trabalhosComCorrecao = new Set(correcoes?.map((c: any) => c.trabalho_id) || []);
         const taxaRetrabalho = total > 0 ? (trabalhosComCorrecao.size / total) * 100 : 0;
 
         // Correções pendentes
-        const correcoesPend = correcoes?.filter(c => 
+        const correcoesPend = correcoes?.filter((c: any) => 
           c.status === 'aguardando_correcao'
         ) || [];
         setCorrecoesPendentes(correcoesPend.slice(0, 10) as any);
@@ -71,9 +73,9 @@ export default function RelatoriosPage() {
           .eq('role', 'elaborador');
 
         if (elaboradores) {
-          const taxaPorElaborador = elaboradores.map(elab => {
-            const trabalhosElab = trabalhos.filter(t => t.elaborador_id === elab.id);
-            const correcoesElab = correcoes?.filter(c => c.elaborador_id === elab.id) || [];
+          const taxaPorElaborador = elaboradores.map((elab: any) => {
+            const trabalhosElab = trabalhos.filter((t: any) => t.elaborador_id === elab.id);
+            const correcoesElab = correcoes?.filter((c: any) => c.elaborador_id === elab.id) || [];
             const taxa = trabalhosElab.length > 0
               ? (correcoesElab.length / trabalhosElab.length) * 100
               : 0;
@@ -84,7 +86,7 @@ export default function RelatoriosPage() {
               totalCorrecoes: correcoesElab.length,
               taxa: Math.round(taxa),
             };
-          }).filter(e => e.totalTrabalhos > 0);
+          }).filter((e: any) => e.totalTrabalhos > 0);
 
           setTaxaRetrabalhoPorElaborador(taxaPorElaborador);
         }

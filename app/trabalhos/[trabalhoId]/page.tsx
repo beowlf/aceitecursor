@@ -24,6 +24,8 @@ import { formatDate, getStatusColor } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho, Aceite, Entrega, Correcao, Atividade, Profile } from '@/types/database';
 
+export const dynamic = 'force-dynamic';
+
 export default function TrabalhoDetalhesPage() {
   const params = useParams();
   const router = useRouter();

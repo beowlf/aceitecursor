@@ -7,6 +7,8 @@ import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
 import { TrabalhoTipo, Trabalho } from '@/types/database';
 
+export const dynamic = 'force-dynamic';
+
 export default function EditarTrabalhoPage() {
   const router = useRouter();
   const params = useParams();

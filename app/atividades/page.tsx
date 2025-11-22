@@ -8,6 +8,8 @@ import { Activity, Calendar, Clock, User, FileText } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 export default function AtividadesPage() {
   const [atividades, setAtividades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

@@ -7,6 +7,8 @@ import { Activity, Database, CheckCircle, XCircle, RefreshCw, AlertCircle, Termi
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
 
+export const dynamic = 'force-dynamic';
+
 interface HealthCheck {
   supabase: 'checking' | 'ok' | 'error';
   database: 'checking' | 'ok' | 'error';

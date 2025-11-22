@@ -13,6 +13,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
 import { getMotivationalMessage } from '@/lib/motivational-messages';
 
+export const dynamic = 'force-dynamic';
+
 // Mock data - será substituído por dados reais do Supabase
 const mockStats = {
   totalTrabalhos: 24,

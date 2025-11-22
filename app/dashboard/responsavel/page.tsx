@@ -10,6 +10,8 @@ import ChartCard from '@/components/dashboard/ChartCard';
 import { createClient } from '@/lib/supabase/client';
 import { Profile, Trabalho } from '@/types/database';
 import { formatDate } from '@/lib/utils';
+
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { getMotivationalMessage } from '@/lib/motivational-messages';

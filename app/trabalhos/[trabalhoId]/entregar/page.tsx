@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Trabalho } from '@/types/database';
 import { formatDate } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 export default function EntregarTrabalhoPage() {
   const params = useParams();
   const router = useRouter();

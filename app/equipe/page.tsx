@@ -8,6 +8,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
 import { getRoleLabel } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 export default function EquipePage() {
   const [membros, setMembros] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);

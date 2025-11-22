@@ -7,6 +7,8 @@ import { FileText, Upload, Download, Search, Folder, File, MoreVertical } from '
 import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 export default function DocumentosPage() {
   const [documentos, setDocumentos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function DocumentosPage() {
       if (error) throw error;
 
       // Transformar entregas em documentos
-      const docs = (entregas || []).flatMap(entrega => {
+      const docs = (entregas || []).flatMap((entrega: any) => {
         const docs: any[] = [];
         
         if (entrega.arquivo_url) {

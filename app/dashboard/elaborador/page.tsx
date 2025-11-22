@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { FileText, Clock, CheckCircle, AlertCircle, Upload } from 'lucide-react';
 import { getMotivationalMessage } from '@/lib/motivational-messages';
 
+export const dynamic = 'force-dynamic';
+
 export default function DashboardElaboradorPage() {
   const [user, setUser] = useState<Profile | null>(null);
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);

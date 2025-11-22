@@ -9,6 +9,8 @@ import { formatDate, getStatusColor } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho } from '@/types/database';
 
+export const dynamic = 'force-dynamic';
+
 export default function TrabalhosPage() {
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [loading, setLoading] = useState(true);

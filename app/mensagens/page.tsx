@@ -7,6 +7,8 @@ import { MessageSquare, Send, Search, Paperclip, Smile } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 export default function MensagensPage() {
   const [mensagens, setMensagens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export default function MensagensPage() {
       // Agrupar por trabalho ou criar conversas
       const conversasMap = new Map();
       
-      (notificacoes || []).forEach(notif => {
+      (notificacoes || []).forEach((notif: any) => {
         const key = notif.trabalho_id || 'geral';
         if (!conversasMap.has(key)) {
           conversasMap.set(key, {

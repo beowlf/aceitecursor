@@ -8,6 +8,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
 import { getRoleLabel } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 export default function ContaPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);

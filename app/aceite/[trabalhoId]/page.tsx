@@ -7,6 +7,8 @@ import { formatDate } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho, Aceite } from '@/types/database';
 
+export const dynamic = 'force-dynamic';
+
 export default function AceitePage() {
   const params = useParams();
   const router = useRouter();
