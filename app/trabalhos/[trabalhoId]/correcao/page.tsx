@@ -190,7 +190,7 @@ export default function SolicitarCorrecaoPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-20">
+        <div className="flex-1 ml-80">
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -207,7 +207,7 @@ export default function SolicitarCorrecaoPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-20">
+        <div className="flex-1 ml-80">
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -223,7 +223,7 @@ export default function SolicitarCorrecaoPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-20">
+      <div className="flex-1 ml-80">
         <Header />
         <main className="p-6">
           <div className="max-w-3xl mx-auto">

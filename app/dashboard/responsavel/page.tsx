@@ -12,6 +12,7 @@ import { Profile, Trabalho } from '@/types/database';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { getMotivationalMessage } from '@/lib/motivational-messages';
 
 export default function DashboardResponsavelPage() {
   const [user, setUser] = useState<Profile | null>(null);
@@ -74,7 +75,7 @@ export default function DashboardResponsavelPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-20">
+        <div className="flex-1 ml-80">
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -90,13 +91,18 @@ export default function DashboardResponsavelPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-20">
+      <div className="flex-1 ml-80">
         <Header />
         <main className="p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Dashboard - Responsável
+              {user ? `Olá, ${user.name.split(' ')[0]}!` : 'Dashboard - Responsável'}
             </h1>
+            <div className="bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-200 rounded-lg p-4 mb-4">
+              <p className="text-primary-800 font-medium">
+                {getMotivationalMessage()}
+              </p>
+            </div>
             <p className="text-gray-600">
               Gerencie seus trabalhos e acompanhe o progresso
             </p>

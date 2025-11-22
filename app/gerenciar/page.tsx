@@ -100,7 +100,7 @@ export default function GerenciarPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-20">
+      <div className="flex-1 ml-80">
         <Header />
         <main className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -245,7 +245,7 @@ export default function GerenciarPage() {
   );
 }
 
-// Componente Modal de Edição
+// Componente Modal de Edição/Criação
 function EditUserModal({
   user,
   onClose,
@@ -255,13 +255,65 @@ function EditUserModal({
   onClose: () => void;
   onSave: (data: Partial<Profile>) => void;
 }) {
+  const supabase = createClient();
   const [formData, setFormData] = useState<{
     name: string;
+    email: string;
+    password: string;
     role: 'admin' | 'responsavel' | 'elaborador';
   }>({
     name: user?.name || '',
+    email: user?.email || '',
+    password: '',
     role: user?.role || 'elaborador' as 'admin' | 'responsavel' | 'elaborador',
   });
+  const [creating, setCreating] = useState(false);
+
+  async function handleCreateUser() {
+    if (!formData.name || !formData.email || !formData.password) {
+      alert('Preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      // Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // Criar perfil com role específico
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            email: formData.email,
+            name: formData.name,
+            role: formData.role,
+          });
+
+        if (profileError) throw profileError;
+
+        alert('Usuário criado com sucesso!');
+        onClose();
+        window.location.reload();
+      }
+    } catch (error: any) {
+      console.error('Erro ao criar usuário:', error);
+      alert('Erro ao criar usuário: ' + error.message);
+    } finally {
+      setCreating(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -270,56 +322,109 @@ function EditUserModal({
           {user ? 'Editar Usuário' : 'Novo Usuário'}
         </h2>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nome *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Função *
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="elaborador">Elaborador</option>
-              <option value="responsavel">Responsável</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </div>
-
-          {user && (
+          <div className="space-y-4">
             <div>
-              <p className="text-sm text-gray-600">Email: {user.email}</p>
-              <p className="text-xs text-gray-500 mt-1">O email não pode ser alterado</p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nome *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
             </div>
-          )}
-        </div>
+
+            {!user && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Senha *
+                  </label>
+                  <input
+                    type="password"
+                    required={!user}
+                    minLength={6}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Mínimo de 6 caracteres</p>
+                </div>
+              </>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Função *
+              </label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="elaborador">Elaborador</option>
+                <option value="responsavel">Responsável</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+
+            {user && (
+              <div>
+                <p className="text-sm text-gray-600">Email: {user.email}</p>
+                <p className="text-xs text-gray-500 mt-1">O email não pode ser alterado</p>
+              </div>
+            )}
+          </div>
 
         <div className="flex items-center gap-4 mt-6 pt-4 border-t">
-          <button
-            onClick={() => onSave(formData)}
-            className="btn-primary flex-1"
-          >
-            Salvar
-          </button>
-          <button
-            onClick={onClose}
-            className="btn-secondary"
-          >
-            Cancelar
-          </button>
+          {user ? (
+            <>
+              <button
+                onClick={() => onSave(formData)}
+                className="btn-primary flex-1"
+              >
+                Salvar
+              </button>
+              <button
+                onClick={onClose}
+                className="btn-secondary"
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleCreateUser}
+                disabled={creating}
+                className="btn-primary flex-1"
+              >
+                {creating ? 'Criando...' : 'Criar Usuário'}
+              </button>
+              <button
+                onClick={onClose}
+                className="btn-secondary"
+                disabled={creating}
+              >
+                Cancelar
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

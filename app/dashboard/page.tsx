@@ -11,6 +11,7 @@ import ChartCard from '@/components/dashboard/ChartCard';
 import { Sun, Moon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
+import { getMotivationalMessage } from '@/lib/motivational-messages';
 
 // Mock data - será substituído por dados reais do Supabase
 const mockStats = {
@@ -114,12 +115,13 @@ export default function DashboardPage() {
 
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Bom dia' : currentHour < 18 ? 'Boa tarde' : 'Boa noite';
+  const motivationalMessage = getMotivationalMessage();
 
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-20">
+        <div className="flex-1 ml-80">
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -135,14 +137,14 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-20">
+      <div className="flex-1 ml-80">
         <Header />
         <main className="p-6">
           {/* Greeting Section */}
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-2">
               <h1 className="text-3xl font-bold text-gray-900">
-                {greeting}, Sajibur.
+                {greeting}{user ? `, ${user.name.split(' ')[0]}` : ''}!
               </h1>
               <div className="flex items-center gap-2">
                 <button className="p-2 text-gray-400 hover:text-gray-600">
@@ -152,6 +154,11 @@ export default function DashboardPage() {
                   <Moon size={20} />
                 </button>
               </div>
+            </div>
+            <div className="bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-200 rounded-lg p-4 mb-4">
+              <p className="text-primary-800 font-medium">
+                {motivationalMessage}
+              </p>
             </div>
             <p className="text-gray-600">
               Acompanhe seus trabalhos, monitore o progresso e acompanhe o status.

@@ -9,6 +9,7 @@ import { Profile, Trabalho } from '@/types/database';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { FileText, Clock, CheckCircle, AlertCircle, Upload } from 'lucide-react';
+import { getMotivationalMessage } from '@/lib/motivational-messages';
 
 export default function DashboardElaboradorPage() {
   const [user, setUser] = useState<Profile | null>(null);
@@ -77,7 +78,7 @@ export default function DashboardElaboradorPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-20">
+        <div className="flex-1 ml-80">
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -93,13 +94,18 @@ export default function DashboardElaboradorPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-20">
+      <div className="flex-1 ml-80">
         <Header />
         <main className="p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Dashboard - Elaborador
+              {user ? `Olá, ${user.name.split(' ')[0]}!` : 'Dashboard - Elaborador'}
             </h1>
+            <div className="bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-200 rounded-lg p-4 mb-4">
+              <p className="text-primary-800 font-medium">
+                {getMotivationalMessage()}
+              </p>
+            </div>
             <p className="text-gray-600">
               Acompanhe seus trabalhos e prazos
             </p>

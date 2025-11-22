@@ -1,17 +1,46 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Bell, AlertCircle } from 'lucide-react';
 import { getRoleLabel } from '@/lib/utils';
 import { Profile } from '@/types/database';
+import { createClient } from '@/lib/supabase/client';
 
 interface HeaderProps {
   user?: Profile;
 }
 
-export default function Header({ user }: HeaderProps) {
+export default function Header({ user: userProp }: HeaderProps) {
+  const [user, setUser] = useState<Profile | null>(userProp || null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    if (!userProp) {
+      loadUser();
+    }
+  }, [userProp]);
+
+  async function loadUser() {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (profile) {
+        setUser(profile);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar usuário no Header:', error);
+    }
+  }
   return (
-    <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 ml-20">
+    <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 ml-80">
       <div className="flex items-center gap-8">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
@@ -56,9 +85,17 @@ export default function Header({ user }: HeaderProps) {
         
         {user && (
           <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-            <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            {user.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.name}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="hidden md:block">
               <p className="text-sm font-medium text-gray-900">{user.name}</p>
               <p className="text-xs text-gray-500">{getRoleLabel(user.role)}</p>
