@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
-import { Plus, Search, Filter, MoreVertical, FileText, Calendar, User } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, FileText, Calendar, User, Edit, Trash2 } from 'lucide-react';
 import { formatDate, getStatusColor } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho } from '@/types/database';
@@ -13,6 +13,8 @@ export default function TrabalhosPage() {
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -42,6 +44,42 @@ export default function TrabalhosPage() {
     trabalho.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     trabalho.tipo.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  async function handleDelete(id: string) {
+    if (!confirm('Tem certeza que deseja excluir este trabalho? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    setDeletingId(id);
+    try {
+      const { error } = await supabase
+        .from('trabalhos')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Remover da lista local
+      setTrabalhos(prev => prev.filter(t => t.id !== id));
+      
+      // Registrar atividade
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('atividades').insert({
+          trabalho_id: id,
+          usuario_id: user.id,
+          tipo: 'cancelamento',
+          descricao: 'Trabalho excluído',
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao excluir trabalho:', error);
+      alert('Erro ao excluir trabalho: ' + error.message);
+    } finally {
+      setDeletingId(null);
+      setShowDeleteConfirm(null);
+    }
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -133,8 +171,24 @@ export default function TrabalhosPage() {
                       >
                         Ver Detalhes
                       </Link>
-                      <button className="p-2 text-gray-400 hover:text-gray-600">
-                        <MoreVertical size={18} />
+                      <Link
+                        href={`/trabalhos/${trabalho.id}/editar`}
+                        className="p-2 text-gray-400 hover:text-gray-600"
+                        title="Editar"
+                      >
+                        <Edit size={18} />
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(trabalho.id)}
+                        disabled={deletingId === trabalho.id}
+                        className="p-2 text-gray-400 hover:text-red-600 disabled:opacity-50"
+                        title="Excluir"
+                      >
+                        {deletingId === trabalho.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+                        ) : (
+                          <Trash2 size={18} />
+                        )}
                       </button>
                     </div>
                   </div>

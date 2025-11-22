@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "ElaboraCRM - Sistema de Gestão de Trabalhos Acadêmicos",
   description: "Sistema SaaS para gerenciamento de trabalhos acadêmicos",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

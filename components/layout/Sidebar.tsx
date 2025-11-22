@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -13,6 +13,7 @@ import {
   LogOut 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -26,6 +27,18 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut();
+      router.push('/auth/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
+  }
 
   return (
     <aside className="w-20 bg-gray-100 h-screen fixed left-0 top-0 flex flex-col items-center py-6">
@@ -58,7 +71,11 @@ export default function Sidebar() {
         })}
       </nav>
       
-      <button className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-200 transition-colors">
+      <button
+        onClick={handleLogout}
+        className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"
+        title="Sair"
+      >
         <LogOut size={20} />
       </button>
     </aside>

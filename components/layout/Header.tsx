@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Search, Bell, AlertCircle } from 'lucide-react';
 import { getRoleLabel } from '@/lib/utils';
 import { Profile } from '@/types/database';
@@ -20,24 +21,24 @@ export default function Header({ user }: HeaderProps) {
         </div>
         
         <nav className="hidden md:flex items-center gap-1">
-          <a href="/dashboard" className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-medium">
+          <Link href="/dashboard" className="px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-medium">
             Visão Geral
-          </a>
-          <a href="/atividades" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
+          </Link>
+          <Link href="/atividades" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
             Atividades
-          </a>
-          <a href="/gerenciar" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
+          </Link>
+          <Link href="/gerenciar" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
             Gerenciar
-          </a>
-          <a href="/programa" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
+          </Link>
+          <Link href="/programa" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
             Programa
-          </a>
-          <a href="/conta" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
+          </Link>
+          <Link href="/conta" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
             Conta
-          </a>
-          <a href="/relatorios" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
+          </Link>
+          <Link href="/relatorios" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium">
             Relatórios
-          </a>
+          </Link>
         </nav>
       </div>
       

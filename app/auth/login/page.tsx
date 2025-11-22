@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
@@ -19,52 +20,81 @@ export default function LoginPage() {
     setError('');
 
     try {
+      // Verificar se as variáveis de ambiente estão configuradas
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error(
+          'Configuração do Supabase não encontrada. Verifique o arquivo .env.local. ' +
+          'Acesse /diagnostico para verificar a configuração.'
+        );
+      }
+
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (authError) {
+        console.error('Erro de autenticação:', authError);
+        
         // Mensagens de erro mais amigáveis
-        if (authError.message.includes('Invalid login credentials')) {
-          throw new Error('Email ou senha incorretos');
-        } else if (authError.message.includes('Email not confirmed')) {
-          throw new Error('Por favor, confirme seu email antes de fazer login');
+        if (authError.message.includes('Invalid login credentials') || authError.message.includes('invalid_credentials')) {
+          throw new Error('Email ou senha incorretos. Verifique suas credenciais.');
+        } else if (authError.message.includes('Email not confirmed') || authError.message.includes('email_not_confirmed')) {
+          throw new Error('Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.');
+        } else if (authError.message.includes('fetch')) {
+          throw new Error(
+            'Erro de conexão com o Supabase. Verifique se a URL e a chave estão corretas no arquivo .env.local. ' +
+            'Acesse /diagnostico para verificar a conexão.'
+          );
         } else {
-          throw authError;
+          throw new Error(`Erro ao fazer login: ${authError.message}`);
         }
       }
 
       if (data.user) {
-        // Verificar se o perfil existe, se não existir, criar
-        const { data: profile, error: profileError } = await supabase
+        // Login bem-sucedido - redirecionar imediatamente
+        console.log('Login bem-sucedido:', data.user.id);
+        
+        // Tentar criar perfil em background (não bloquear o login)
+        supabase
           .from('profiles')
-          .select('*')
+          .select('id')
           .eq('id', data.user.id)
-          .single();
-
-        if (profileError && profileError.code === 'PGRST116') {
-          // Perfil não existe, criar um
-          const { error: createError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              email: data.user.email || email,
-              name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuário',
-              role: 'elaborador',
-            });
-
-          if (createError) {
-            console.error('Erro ao criar perfil:', createError);
-            // Continuar mesmo assim, o trigger pode criar depois
-          }
-        }
-
-        router.push('/dashboard');
-        router.refresh();
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            if (!profile) {
+              // Tentar criar perfil - não esperar resultado
+              supabase.rpc('create_user_profile', {
+                p_user_id: data.user.id,
+                p_email: data.user.email || email,
+                p_name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
+              }).catch(() => {
+                // Se RPC falhar, tentar inserção direta
+                supabase.from('profiles').insert({
+                  id: data.user.id,
+                  email: data.user.email || email,
+                  name: data.user.user_metadata?.name || email.split('@')[0] || 'Usuário',
+                  role: 'elaborador',
+                }).catch(() => {
+                  // Ignorar erros - perfil pode ser criado depois
+                  console.warn('Não foi possível criar perfil automaticamente');
+                });
+              });
+            }
+          })
+          .catch(() => {
+            // Ignorar erros - não bloquear login
+          });
+        
+        // Redirecionar imediatamente - não esperar criação de perfil
+        window.location.href = '/dashboard';
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login');
+      console.error('Erro completo no login:', err);
+      setError(err.message || 'Erro ao fazer login. Tente novamente ou acesse /diagnostico para verificar a configuração.');
     } finally {
       setLoading(false);
     }
@@ -85,8 +115,22 @@ export default function LoginPage() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Entrar</h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="text-red-500 mt-0.5" size={18} />
+                <div className="flex-1">
+                  <p className="text-red-700 text-sm font-medium mb-1">Erro ao fazer login</p>
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              </div>
+              {error.includes('Supabase') && (
+                <a 
+                  href="/diagnostico" 
+                  className="mt-3 inline-block text-sm text-red-700 underline hover:text-red-800"
+                >
+                  Verificar conexão com Supabase
+                </a>
+              )}
             </div>
           )}
 

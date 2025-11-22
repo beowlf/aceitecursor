@@ -31,49 +31,46 @@ export default function RegisterPage() {
         },
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Erro ao criar usuário:', authError);
+        throw authError;
+      }
 
       if (authData.user) {
         console.log('Usuário criado:', authData.user.id);
         
-        // O trigger handle_new_user() deve criar o perfil automaticamente
-        // Aguardar um pouco para garantir que o trigger seja executado
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Criar perfil usando a função RPC (mais confiável que trigger)
+        try {
+          const { data: profileData, error: profileError } = await supabase.rpc('create_user_profile', {
+            p_user_id: authData.user.id,
+            p_email: email,
+            p_name: name || null,
+          });
 
-        // Verificar se o perfil foi criado pelo trigger
-        const { data: profile, error: profileCheckError } = await supabase
-          .from('profiles')
-          .select('id, name, role')
-          .eq('id', authData.user.id)
-          .single();
-
-        console.log('Perfil verificado:', profile, profileCheckError);
-
-        // Se o perfil não existe, criar via API route
-        if (!profile) {
-          console.log('Perfil não encontrado, criando via API...');
-          try {
-            const response = await fetch('/api/auth/create-profile', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                userId: authData.user.id,
+          if (profileError) {
+            console.error('Erro ao criar perfil via RPC:', profileError);
+            // Tentar criar diretamente como fallback
+            const { error: directInsertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: authData.user.id,
                 email: email,
-                name: name,
-              }),
-            });
+                name: name || email.split('@')[0] || 'Usuário',
+                role: 'elaborador',
+              });
 
-            const result = await response.json();
-            console.log('Resposta da API:', result);
-
-            if (!response.ok) {
-              console.error('Erro ao criar perfil via API:', result);
+            if (directInsertError) {
+              console.error('Erro ao criar perfil diretamente:', directInsertError);
+              // Continuar mesmo assim, o usuário pode criar o perfil depois
+            } else {
+              console.log('Perfil criado diretamente com sucesso');
             }
-          } catch (apiError) {
-            console.error('Erro ao chamar API de criação de perfil:', apiError);
+          } else {
+            console.log('Perfil criado via RPC:', profileData);
           }
+        } catch (profileErr: any) {
+          console.error('Erro ao tentar criar perfil:', profileErr);
+          // Continuar mesmo assim
         }
 
         // Tentar fazer login
@@ -107,7 +104,26 @@ export default function RegisterPage() {
         throw new Error('Usuário não foi criado. Tente novamente.');
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar conta');
+      console.error('Erro completo no registro:', err);
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = 'Erro ao criar conta';
+      
+      if (err.message) {
+        if (err.message.includes('Database error')) {
+          errorMessage = 'Erro no banco de dados. Execute o script fix_trigger_error.sql no Supabase. Veja CONFIGURAR_SUPABASE.md para instruções.';
+        } else if (err.message.includes('User already registered')) {
+          errorMessage = 'Este email já está cadastrado. Tente fazer login ou use outro email.';
+        } else if (err.message.includes('Password')) {
+          errorMessage = 'A senha deve ter pelo menos 6 caracteres.';
+        } else if (err.message.includes('Email')) {
+          errorMessage = 'Email inválido. Verifique o formato do email.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -128,8 +144,26 @@ export default function RegisterPage() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Criar Conta</h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <svg className="text-red-500 mt-0.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <div className="flex-1">
+                  <p className="text-red-700 text-sm font-medium mb-1">Erro ao criar conta</p>
+                  <p className="text-red-600 text-sm">{error}</p>
+                  {error.includes('fix_trigger_error.sql') && (
+                    <a 
+                      href="/diagnostico" 
+                      className="mt-2 inline-block text-sm text-red-700 underline hover:text-red-800"
+                    >
+                      Verificar configuração do Supabase
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

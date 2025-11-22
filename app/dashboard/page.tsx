@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import StatCard from '@/components/dashboard/StatCard';
@@ -5,6 +9,8 @@ import ProgressCard from '@/components/dashboard/ProgressCard';
 import ActivityTable from '@/components/dashboard/ActivityTable';
 import ChartCard from '@/components/dashboard/ChartCard';
 import { Sun, Moon } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { Profile } from '@/types/database';
 
 // Mock data - será substituído por dados reais do Supabase
 const mockStats = {
@@ -65,8 +71,66 @@ const mockChartData = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
+  async function loadUser() {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (profile) {
+        setUser(profile);
+        // Redirecionar para dashboard específico baseado no role
+        if (profile.role === 'responsavel') {
+          router.push('/dashboard/responsavel');
+          return;
+        } else if (profile.role === 'elaborador') {
+          router.push('/dashboard/elaborador');
+          return;
+        } else if (profile.role === 'admin') {
+          router.push('/dashboard/admin');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar usuário:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Bom dia' : currentHour < 18 ? 'Boa tarde' : 'Boa noite';
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 ml-20">
+          <Header />
+          <main className="p-6">
+            <div className="card text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando...</p>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
