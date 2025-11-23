@@ -13,6 +13,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 export const dynamic = 'force-dynamic';
 
 export default function SolicitarCorrecaoPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const params = useParams();
   const router = useRouter();
   const trabalhoId = params.trabalhoId as string;

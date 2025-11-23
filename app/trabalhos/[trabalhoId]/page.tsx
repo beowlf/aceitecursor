@@ -29,6 +29,7 @@ import { Trabalho, Aceite, Entrega, Correcao, Atividade, Profile } from '@/types
 export const dynamic = 'force-dynamic';
 
 export default function TrabalhoDetalhesPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const params = useParams();
   const router = useRouter();
   const trabalhoId = params.trabalhoId as string;
