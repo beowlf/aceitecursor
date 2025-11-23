@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import StatCard from '@/components/dashboard/StatCard';
 import ProgressCard from '@/components/dashboard/ProgressCard';
@@ -12,6 +13,7 @@ import { Sun, Moon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
 import { getMotivationalMessage } from '@/lib/motivational-messages';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +78,7 @@ const mockChartData = {
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { trabalhosSidebarOpen } = useSidebar();
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -140,7 +143,8 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+        <TrabalhosSidebar />
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -156,7 +160,8 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           {/* Greeting Section */}

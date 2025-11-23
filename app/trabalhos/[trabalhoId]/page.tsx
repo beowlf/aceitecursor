@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { 
   FileText, 
@@ -21,6 +22,7 @@ import {
   Edit
 } from 'lucide-react';
 import { formatDate, getStatusColor } from '@/lib/utils';
+import { useSidebar } from '@/contexts/SidebarContext';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho, Aceite, Entrega, Correcao, Atividade, Profile } from '@/types/database';
 
@@ -129,7 +131,8 @@ export default function TrabalhoDetalhesPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+        <TrabalhosSidebar />
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -146,7 +149,8 @@ export default function TrabalhoDetalhesPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+        <TrabalhosSidebar />
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">

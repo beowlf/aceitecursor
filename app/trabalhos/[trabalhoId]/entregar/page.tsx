@@ -8,10 +8,12 @@ import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho } from '@/types/database';
 import { formatDate } from '@/lib/utils';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
 export default function EntregarTrabalhoPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const params = useParams();
   const router = useRouter();
   const trabalhoId = params.trabalhoId as string;
@@ -174,7 +176,7 @@ export default function EntregarTrabalhoPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+        <div className="flex-1 mr-80">
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -191,7 +193,7 @@ export default function EntregarTrabalhoPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+        <div className="flex-1 mr-80">
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -207,7 +209,7 @@ export default function EntregarTrabalhoPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="max-w-3xl mx-auto">

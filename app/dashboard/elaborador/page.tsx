@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import StatCard from '@/components/dashboard/StatCard';
 import { createClient } from '@/lib/supabase/client';
@@ -10,10 +11,12 @@ import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { FileText, Clock, CheckCircle, AlertCircle, Upload } from 'lucide-react';
 import { getMotivationalMessage } from '@/lib/motivational-messages';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
 export default function DashboardElaboradorPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const [user, setUser] = useState<Profile | null>(null);
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +83,8 @@ export default function DashboardElaboradorPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -96,7 +100,8 @@ export default function DashboardElaboradorPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="mb-8">

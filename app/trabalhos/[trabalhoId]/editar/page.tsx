@@ -6,10 +6,12 @@ import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
 import { TrabalhoTipo, Trabalho } from '@/types/database';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
 export default function EditarTrabalhoPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const router = useRouter();
   const params = useParams();
   const trabalhoId = params.trabalhoId as string;
@@ -26,6 +28,7 @@ export default function EditarTrabalhoPage() {
     tem_correcoes_obrigatorias: true,
     prazo_entrega: '',
     termos: '',
+    observacoes: '',
   });
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export default function EditarTrabalhoPage() {
         tem_correcoes_obrigatorias: data.tem_correcoes_obrigatorias,
         prazo_entrega: prazoLocal,
         termos: data.termos,
+        observacoes: data.observacoes || '',
       });
     } catch (error: any) {
       console.error('Erro ao carregar trabalho:', error);
@@ -111,7 +115,7 @@ export default function EditarTrabalhoPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+        <div className="flex-1 mr-80">
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -127,7 +131,7 @@ export default function EditarTrabalhoPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+        <div className="flex-1 mr-80">
         <Header />
         <main className="p-6">
           <div className="max-w-3xl mx-auto">

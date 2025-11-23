@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { FileText, Upload, Download, Search, Folder, File, MoreVertical } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +16,7 @@ export default function DocumentosPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const supabase = createClient();
+  const { trabalhosSidebarOpen } = useSidebar();
 
   useEffect(() => {
     loadDocumentos();
@@ -90,7 +93,8 @@ export default function DocumentosPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="flex items-center justify-between mb-6">

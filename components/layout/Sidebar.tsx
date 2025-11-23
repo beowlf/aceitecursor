@@ -12,36 +12,41 @@ import {
   Settings, 
   HelpCircle, 
   LogOut,
-  Clock,
-  AlertCircle
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
-import { Trabalho } from '@/types/database';
-import { formatDate } from '@/lib/utils';
+import { Profile } from '@/types/database';
 
-const menuItems = [
+interface MenuItem {
+  icon: any;
+  label: string;
+  href: string;
+  roles?: ('admin' | 'responsavel' | 'elaborador')[];
+}
+
+const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: Calendar, label: 'Trabalhos', href: '/trabalhos' },
   { icon: Mail, label: 'Mensagens', href: '/mensagens' },
-  { icon: FileText, label: 'Documentos', href: '/documentos' },
-  { icon: Users, label: 'Equipe', href: '/equipe' },
+  { icon: Activity, label: 'Atividades', href: '/atividades', roles: ['admin', 'responsavel'] },
+  { icon: Users, label: 'Equipe', href: '/equipe', roles: ['admin', 'responsavel'] },
   { icon: Settings, label: 'Configurações', href: '/configuracoes' },
   { icon: HelpCircle, label: 'Ajuda', href: '/ajuda' },
+  // Documentos removido - não está claro o propósito
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const [trabalhosEmAndamento, setTrabalhosEmAndamento] = useState<Trabalho[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<'admin' | 'responsavel' | 'elaborador' | null>(null);
 
   useEffect(() => {
-    loadTrabalhosEmAndamento();
+    loadUserRole();
   }, []);
 
-  async function loadTrabalhosEmAndamento() {
+  async function loadUserRole() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -52,32 +57,11 @@ export default function Sidebar() {
         .eq('id', user.id)
         .single();
 
-      if (!profile) return;
-
-      let query = supabase
-        .from('trabalhos')
-        .select('*, responsavel:profiles!trabalhos_responsavel_id_fkey(*), elaborador:profiles!trabalhos_elaborador_id_fkey(*)')
-        .in('status', ['pendente', 'aceito', 'em_andamento', 'aguardando_correcao']);
-
-      // Filtrar por role
-      if (profile.role === 'elaborador') {
-        query = query.eq('elaborador_id', user.id);
-      } else if (profile.role === 'responsavel') {
-        query = query.eq('responsavel_id', user.id);
-      }
-      // Admin vê todos
-
-      const { data } = await query
-        .order('prazo_entrega', { ascending: true })
-        .limit(5);
-
-      if (data) {
-        setTrabalhosEmAndamento(data);
+      if (profile) {
+        setUserRole(profile.role);
       }
     } catch (error) {
-      console.error('Erro ao carregar trabalhos:', error);
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar role do usuário:', error);
     }
   }
 
@@ -91,8 +75,15 @@ export default function Sidebar() {
     }
   }
 
+  // Filtrar itens do menu baseado no role
+  const filteredMenuItems = menuItems.filter(item => {
+    if (!item.roles) return true; // Sem restrição de role
+    if (!userRole) return false; // Se não tem role, não mostra
+    return item.roles.includes(userRole);
+  });
+
   return (
-    <aside className="w-80 bg-gray-100 h-screen fixed left-0 top-0 flex flex-col py-6 overflow-y-auto">
+    <aside className="w-80 bg-gray-100 h-screen fixed left-0 top-0 flex flex-col py-6 overflow-y-auto z-40">
       <div className="mb-8 px-4">
         <div className="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center">
           <span className="text-white font-bold text-xl">E</span>
@@ -100,7 +91,7 @@ export default function Sidebar() {
       </div>
       
       <nav className="flex-1 space-y-2 px-4">
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
           
@@ -121,58 +112,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      {/* Trabalhos em Andamento */}
-      <div className="px-4 mt-6 border-t border-gray-300 pt-6">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Trabalhos em Andamento</h3>
-        {loading ? (
-          <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 mx-auto"></div>
-          </div>
-        ) : trabalhosEmAndamento.length === 0 ? (
-          <p className="text-xs text-gray-500 text-center py-4">Nenhum trabalho em andamento</p>
-        ) : (
-          <div className="space-y-2">
-            {trabalhosEmAndamento.map((trabalho) => {
-              const prazoDate = new Date(trabalho.prazo_entrega);
-              const isAtrasado = prazoDate < new Date() && trabalho.status !== 'concluido';
-              const isCorrecao = trabalho.status === 'aguardando_correcao';
-              
-              return (
-                <Link
-                  key={trabalho.id}
-                  href={`/trabalhos/${trabalho.id}`}
-                  className="block p-3 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-900 line-clamp-2 flex-1">
-                      {trabalho.titulo}
-                    </p>
-                    {isAtrasado && (
-                      <AlertCircle className="text-red-500 flex-shrink-0 ml-2" size={16} />
-                    )}
-                    {isCorrecao && (
-                      <Clock className="text-orange-500 flex-shrink-0 ml-2" size={16} />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Clock size={12} />
-                    <span>
-                      {isCorrecao ? 'Correção: ' : 'Entrega: '}
-                      {formatDate(trabalho.prazo_entrega)}
-                    </span>
-                  </div>
-                  {isAtrasado && (
-                    <span className="inline-block mt-2 text-xs text-red-600 font-medium">
-                      Atrasado
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
       
       <div className="px-4 mt-6 border-t border-gray-300 pt-6">
         <button
@@ -186,9 +125,3 @@ export default function Sidebar() {
     </aside>
   );
 }
-
-
-
-
-
-

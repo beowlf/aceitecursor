@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import StatCard from '@/components/dashboard/StatCard';
 import ChartCard from '@/components/dashboard/ChartCard';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho, Correcao, Profile } from '@/types/database';
 import { formatDate } from '@/lib/utils';
+import { useSidebar } from '@/contexts/SidebarContext';
 import Link from 'next/link';
 import { FileText, AlertCircle, Download, TrendingDown, CheckCircle, Clock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default function RelatoriosPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const [stats, setStats] = useState({
     totalTrabalhos: 0,
     concluidos: 0,
@@ -115,7 +118,8 @@ export default function RelatoriosPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="mb-8">

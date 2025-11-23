@@ -3,13 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
 import { TrabalhoTipo, Profile } from '@/types/database';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
 export default function NovoTrabalhoPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const router = useRouter();
   const supabase = createClient();
   
@@ -25,6 +28,7 @@ export default function NovoTrabalhoPage() {
     tem_correcoes_obrigatorias: true,
     prazo_entrega: '',
     termos: '',
+    observacoes: '',
     elaborador_id: '' as string | undefined,
   });
 
@@ -78,11 +82,12 @@ export default function NovoTrabalhoPage() {
           titulo: formData.titulo,
           tipo: formData.tipo,
           descricao: formData.descricao,
-          link_original: formData.link_original,
+          link_original: formData.link_original || null,
           feito_do_zero: formData.feito_do_zero,
           tem_correcoes_obrigatorias: formData.tem_correcoes_obrigatorias,
           prazo_entrega: new Date(formData.prazo_entrega).toISOString(),
           termos: formData.termos,
+          observacoes: formData.observacoes || null,
           responsavel_id: user.id,
           elaborador_id: formData.elaborador_id || null,
           status: 'pendente',
@@ -114,7 +119,8 @@ export default function NovoTrabalhoPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="max-w-3xl mx-auto">
@@ -215,6 +221,9 @@ export default function NovoTrabalhoPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="https://..."
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Link para o arquivo original do trabalho (se houver)
+                </p>
               </div>
 
               <div>
@@ -228,6 +237,22 @@ export default function NovoTrabalhoPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Descreva o trabalho..."
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Observações para o Elaborador
+                </label>
+                <textarea
+                  value={formData.observacoes}
+                  onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Ex: Faltou material, solicitar mais informações com o aluno, etc."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Informações importantes que o elaborador precisa saber antes de aceitar o trabalho
+                </p>
               </div>
 
               <div className="space-y-3">

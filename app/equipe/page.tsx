@@ -2,22 +2,53 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { Users, UserPlus, Mail, Phone, Briefcase, Award } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
 import { getRoleLabel } from '@/lib/utils';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
 export default function EquipePage() {
   const [membros, setMembros] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<'admin' | 'responsavel' | 'elaborador' | null>(null);
   const supabase = createClient();
+  const { trabalhosSidebarOpen } = useSidebar();
 
   useEffect(() => {
-    loadEquipe();
+    checkAccess();
   }, []);
+
+  async function checkAccess() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/auth/login';
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || (profile.role !== 'admin' && profile.role !== 'responsavel')) {
+        window.location.href = '/dashboard';
+        return;
+      }
+
+      setUserRole(profile.role);
+      loadEquipe();
+    } catch (error) {
+      console.error('Erro ao verificar acesso:', error);
+      window.location.href = '/dashboard';
+    }
+  }
 
   async function loadEquipe() {
     try {
@@ -48,7 +79,8 @@ export default function EquipePage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="flex items-center justify-between mb-6">

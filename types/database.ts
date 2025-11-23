@@ -27,6 +27,7 @@ export interface Trabalho {
   prazo_entrega: string;
   status: TrabalhoStatus;
   termos: string;
+  observacoes?: string;
   created_at: string;
   updated_at: string;
   responsavel?: Profile;
@@ -45,6 +46,9 @@ export interface Aceite {
   ip_address?: string;
   user_agent?: string;
   aceito_em?: string;
+  aceita_antiplagio?: boolean;
+  aceita_correcoes?: boolean;
+  motivo_recusa?: string;
   created_at: string;
   updated_at: string;
   trabalho?: Trabalho;

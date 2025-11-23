@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
+import { useSidebar } from '@/contexts/SidebarContext';
 import { HelpCircle, Book, MessageSquare, Video, FileText, Search, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function AjudaPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const [searchTerm, setSearchTerm] = useState('');
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
@@ -52,7 +55,8 @@ export default function AjudaPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="mb-6">

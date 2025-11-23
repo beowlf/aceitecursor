@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import StatCard from '@/components/dashboard/StatCard';
 import ProgressCard from '@/components/dashboard/ProgressCard';
@@ -15,8 +16,10 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { getMotivationalMessage } from '@/lib/motivational-messages';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export default function DashboardResponsavelPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const [user, setUser] = useState<Profile | null>(null);
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +80,8 @@ export default function DashboardResponsavelPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -93,7 +97,8 @@ export default function DashboardResponsavelPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="mb-8">

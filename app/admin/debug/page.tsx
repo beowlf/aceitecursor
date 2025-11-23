@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { Activity, Database, CheckCircle, XCircle, RefreshCw, AlertCircle, Terminal } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +26,7 @@ interface ErrorLog {
 }
 
 export default function DebugPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const [user, setUser] = useState<Profile | null>(null);
   const [health, setHealth] = useState<HealthCheck>({
     supabase: 'checking',
@@ -172,7 +175,8 @@ export default function DebugPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -189,7 +193,8 @@ export default function DebugPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+        <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
           <Header />
           <main className="p-6">
             <div className="card text-center py-12">
@@ -206,7 +211,8 @@ export default function DebugPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className="flex-1 ml-80 mr-80">
         <Header />
         <main className="p-6">
           <div className="mb-6">

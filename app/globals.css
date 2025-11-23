@@ -6,11 +6,19 @@
   body {
     @apply bg-gray-50 text-gray-900;
   }
+  
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
 }
 
 @layer components {
   .card {
     @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+  }
+  
+  .dark .card {
+    @apply bg-gray-800 border-gray-700;
   }
   
   .btn-primary {

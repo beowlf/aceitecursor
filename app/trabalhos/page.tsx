@@ -3,15 +3,18 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { Plus, Search, Filter, MoreVertical, FileText, Calendar, User, Edit, Trash2 } from 'lucide-react';
 import { formatDate, getStatusColor } from '@/lib/utils';
+import { useSidebar } from '@/contexts/SidebarContext';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
 
 export default function TrabalhosPage() {
+  const { trabalhosSidebarOpen } = useSidebar();
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,7 +89,8 @@ export default function TrabalhosPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="flex items-center justify-between mb-6">

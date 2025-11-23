@@ -3,21 +3,52 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
+import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { Activity, Calendar, Clock, User, FileText } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
 
 export default function AtividadesPage() {
   const [atividades, setAtividades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<'admin' | 'responsavel' | 'elaborador' | null>(null);
   const supabase = createClient();
+  const { trabalhosSidebarOpen } = useSidebar();
 
   useEffect(() => {
-    loadAtividades();
+    checkAccess();
   }, []);
+
+  async function checkAccess() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/auth/login';
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || (profile.role !== 'admin' && profile.role !== 'responsavel')) {
+        window.location.href = '/dashboard';
+        return;
+      }
+
+      setUserRole(profile.role);
+      loadAtividades();
+    } catch (error) {
+      console.error('Erro ao verificar acesso:', error);
+      window.location.href = '/dashboard';
+    }
+  }
 
   async function loadAtividades() {
     try {
@@ -69,7 +100,8 @@ export default function AtividadesPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-80">
+      <TrabalhosSidebar />
+      <div className={`flex-1 ml-80 transition-all duration-300 ${trabalhosSidebarOpen ? 'mr-80' : ''}`}>
         <Header />
         <main className="p-6">
           <div className="mb-6">
