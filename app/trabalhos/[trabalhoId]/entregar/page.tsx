@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
-import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Trabalho } from '@/types/database';
 import { formatDate } from '@/lib/utils';
@@ -22,9 +22,11 @@ export default function EntregarTrabalhoPage() {
   const [trabalho, setTrabalho] = useState<Trabalho | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [arquivo, setArquivo] = useState<File | null>(null);
-  const [relatorioAntiPlagio, setRelatorioAntiPlagio] = useState<File | null>(null);
-  const [observacoes, setObservacoes] = useState('');
+  const [formData, setFormData] = useState({
+    antiplagio_enviado: false,
+    previa_enviada: false,
+    trabalho_final_enviado: false,
+  });
   const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
@@ -50,32 +52,11 @@ export default function EntregarTrabalhoPage() {
     }
   }
 
-  async function uploadFile(file: File, path: string): Promise<string> {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `${path}/${fileName}`;
-
-    const { data, error } = await supabase.storage
-      .from('trabalhos')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('trabalhos')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     
-    if (!arquivo) {
-      alert('Por favor, selecione o arquivo do trabalho.');
+    if (!formData.antiplagio_enviado || !formData.trabalho_final_enviado) {
+      alert('Por favor, confirme que enviou o Relatório Anti-Plágio e o Arquivo do Trabalho Final.');
       return;
     }
 
@@ -95,41 +76,36 @@ export default function EntregarTrabalhoPage() {
         return;
       }
 
-      setUploadProgress(20);
+      setUploadProgress(50);
 
-      // Upload do arquivo principal
-      const arquivoUrl = await uploadFile(arquivo, `entregas/${trabalhoId}`);
-      setUploadProgress(60);
-
-      // Upload do relatório anti-plágio (se fornecido)
-      let relatorioUrl: string | undefined;
-      if (relatorioAntiPlagio) {
-        relatorioUrl = await uploadFile(relatorioAntiPlagio, `relatorios/${trabalhoId}`);
-      }
-      setUploadProgress(80);
-
-      // Criar registro de entrega
+      // Criar registro de entrega (sem arquivos, apenas confirmação)
       const { data: entrega, error: entregaError } = await supabase
         .from('entregas')
         .insert({
           trabalho_id: trabalhoId,
           elaborador_id: user.id,
-          arquivo_url: arquivoUrl,
-          relatorio_antiplagio_url: relatorioUrl,
-          observacoes: observacoes || null,
+          arquivo_url: formData.trabalho_final_enviado ? 'confirmado' : '',
+          relatorio_antiplagio_url: formData.antiplagio_enviado ? 'confirmado' : '',
+          observacoes: JSON.stringify({
+            antiplagio_enviado: formData.antiplagio_enviado,
+            previa_enviada: formData.previa_enviada,
+            trabalho_final_enviado: formData.trabalho_final_enviado,
+          }),
         })
         .select()
         .single();
 
       if (entregaError) throw entregaError;
 
-      setUploadProgress(90);
+      setUploadProgress(80);
 
-      // Atualizar status do trabalho
-      await supabase
-        .from('trabalhos')
-        .update({ status: 'concluido' })
-        .eq('id', trabalhoId);
+      // Atualizar status do trabalho para em_andamento se ainda não estiver
+      if (trabalho?.status === 'aceito') {
+        await supabase
+          .from('trabalhos')
+          .update({ status: 'em_andamento' })
+          .eq('id', trabalhoId);
+      }
 
       // Registrar atividade
       await supabase
@@ -138,11 +114,8 @@ export default function EntregarTrabalhoPage() {
           trabalho_id: trabalhoId,
           usuario_id: user.id,
           tipo: 'entrega',
-          descricao: `Trabalho entregue: ${trabalho?.titulo}`,
-          metadata: {
-            arquivo_url: arquivoUrl,
-            relatorio_url: relatorioUrl,
-          },
+          descricao: `Entrega confirmada: ${trabalho?.titulo}`,
+          metadata: formData,
         });
 
       // Criar notificação para o responsável
@@ -152,8 +125,8 @@ export default function EntregarTrabalhoPage() {
           .insert({
             usuario_id: trabalho.responsavel_id,
             trabalho_id: trabalhoId,
-            titulo: 'Nova Entrega',
-            mensagem: `O trabalho "${trabalho.titulo}" foi entregue por ${user.email}`,
+            titulo: 'Entrega Confirmada',
+            mensagem: `O elaborador confirmou a entrega do trabalho "${trabalho.titulo}"`,
           });
       }
 
@@ -164,8 +137,8 @@ export default function EntregarTrabalhoPage() {
         router.push(`/trabalhos/${trabalhoId}`);
       }, 1500);
     } catch (error: any) {
-      console.error('Erro ao fazer entrega:', error);
-      alert('Erro ao fazer entrega: ' + error.message);
+      console.error('Erro ao confirmar entrega:', error);
+      alert('Erro ao confirmar entrega: ' + error.message);
       setUploadProgress(0);
     } finally {
       setSubmitting(false);
@@ -236,97 +209,68 @@ export default function EntregarTrabalhoPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="card space-y-6">
-              {/* Upload Arquivo Principal */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Arquivo do Trabalho * <span className="text-red-500">(Obrigatório)</span>
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+              <p className="text-gray-600 mb-4">
+                Confirme que você enviou todos os itens necessários para a entrega:
+              </p>
+
+              {/* Checkbox Relatório Anti-Plágio */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
                   <input
-                    type="file"
-                    id="arquivo"
-                    accept=".pdf,.doc,.docx,.zip,.rar"
-                    onChange={(e) => setArquivo(e.target.files?.[0] || null)}
-                    className="hidden"
-                    required
+                    type="checkbox"
+                    checked={formData.antiplagio_enviado}
+                    onChange={(e) => setFormData({ ...formData, antiplagio_enviado: e.target.checked })}
+                    className="w-5 h-5 text-primary-500 rounded border-gray-300 focus:ring-primary-500 mt-0.5"
                   />
-                  <label htmlFor="arquivo" className="cursor-pointer">
-                    {arquivo ? (
-                      <div className="space-y-2">
-                        <FileText className="mx-auto text-green-500" size={48} />
-                        <p className="text-sm font-medium text-gray-900">{arquivo.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {(arquivo.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Upload className="mx-auto text-gray-400" size={48} />
-                        <p className="text-sm text-gray-600">
-                          Clique para selecionar ou arraste o arquivo aqui
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Formatos aceitos: PDF, DOC, DOCX, ZIP, RAR
-                        </p>
-                      </div>
-                    )}
-                  </label>
-                </div>
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-900">
+                      Relatório Anti-Plágio <span className="text-red-500">(Obrigatório)</span>
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Confirme que você enviou o relatório anti-plágio do trabalho. Este documento é obrigatório para todas as entregas e deve ser enviado junto com o trabalho final.
+                    </p>
+                  </div>
+                </label>
               </div>
 
-              {/* Upload Relatório Anti-Plágio */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Relatório Anti-Plágio <span className="text-red-500">(Obrigatório)</span>
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+              {/* Checkbox Arquivo Prévia */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
                   <input
-                    type="file"
-                    id="relatorio"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => setRelatorioAntiPlagio(e.target.files?.[0] || null)}
-                    className="hidden"
-                    required
+                    type="checkbox"
+                    checked={formData.previa_enviada}
+                    onChange={(e) => setFormData({ ...formData, previa_enviada: e.target.checked })}
+                    className="w-5 h-5 text-primary-500 rounded border-gray-300 focus:ring-primary-500 mt-0.5"
                   />
-                  <label htmlFor="relatorio" className="cursor-pointer">
-                    {relatorioAntiPlagio ? (
-                      <div className="space-y-2">
-                        <FileText className="mx-auto text-green-500" size={48} />
-                        <p className="text-sm font-medium text-gray-900">{relatorioAntiPlagio.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {(relatorioAntiPlagio.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Upload className="mx-auto text-gray-400" size={48} />
-                        <p className="text-sm text-gray-600">
-                          Clique para selecionar o relatório anti-plágio
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Formatos aceitos: PDF, DOC, DOCX
-                        </p>
-                      </div>
-                    )}
-                  </label>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  O relatório anti-plágio é obrigatório para todas as entregas.
-                </p>
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-900">
+                      Arquivo do Trabalho Prévia <span className="text-red-500">(Obrigatório)</span>
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Confirme que você enviou a prévia do trabalho. A prévia permite que o responsável revise o trabalho antes da versão final e solicite ajustes se necessário.
+                    </p>
+                  </div>
+                </label>
               </div>
 
-              {/* Observações */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Observações
+              {/* Checkbox Arquivo Final */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.trabalho_final_enviado}
+                    onChange={(e) => setFormData({ ...formData, trabalho_final_enviado: e.target.checked })}
+                    className="w-5 h-5 text-primary-500 rounded border-gray-300 focus:ring-primary-500 mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-900">
+                      Arquivo do Trabalho Final <span className="text-red-500">(Obrigatório)</span>
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Confirme que você enviou o arquivo final do trabalho. Este é o documento completo e finalizado que será entregue ao responsável após a aprovação.
+                    </p>
+                  </div>
                 </label>
-                <textarea
-                  value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Adicione observações sobre a entrega (opcional)"
-                />
               </div>
 
               {/* Progress Bar */}
@@ -360,18 +304,18 @@ export default function EntregarTrabalhoPage() {
               <div className="flex items-center gap-4 pt-4 border-t">
                 <button
                   type="submit"
-                  disabled={submitting || !arquivo || !relatorioAntiPlagio || uploadProgress === 100}
+                  disabled={submitting || !formData.antiplagio_enviado || !formData.trabalho_final_enviado || uploadProgress === 100}
                   className="btn-primary flex-1 flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Enviando...
+                      Confirmando...
                     </>
                   ) : (
                     <>
-                      <Upload size={20} />
-                      Finalizar Entrega
+                      <CheckCircle size={20} />
+                      Confirmar Entrega
                     </>
                   )}
                 </button>

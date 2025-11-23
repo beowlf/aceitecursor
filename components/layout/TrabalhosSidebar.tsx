@@ -37,7 +37,7 @@ export default function TrabalhosSidebar() {
       let query = supabase
         .from('trabalhos')
         .select('*, responsavel:profiles!trabalhos_responsavel_id_fkey(*), elaborador:profiles!trabalhos_elaborador_id_fkey(*)')
-        .in('status', ['pendente', 'aceito', 'em_andamento', 'aguardando_correcao']);
+        .in('status', ['aceito', 'em_andamento']);
 
       // Filtrar por role
       if (profile.role === 'elaborador') {

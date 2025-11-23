@@ -84,6 +84,17 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', trabalho_id);
 
+    // Verificar se o usuário é responsável ou elaborador
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const descricaoAtividade = profile?.role === 'responsavel' 
+      ? 'Trabalho aceito pelo Responsável'
+      : 'Trabalho aceito pelo elaborador';
+
     // Registrar atividade
     await supabase
       .from('atividades')
@@ -91,7 +102,7 @@ export async function POST(request: NextRequest) {
         trabalho_id,
         usuario_id: user.id,
         tipo: 'aceite',
-        descricao: 'Trabalho aceito pelo elaborador',
+        descricao: descricaoAtividade,
         ip_address: ipAddress,
         metadata: { assinatura_digital },
       });

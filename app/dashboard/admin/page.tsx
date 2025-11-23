@@ -204,6 +204,62 @@ export default function DashboardAdminPage() {
             </div>
           </div>
 
+          {/* Trabalhos em Andamento */}
+          <div className="card mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Trabalhos em Andamento</h2>
+              <Link href="/trabalhos" className="text-sm text-primary-500 hover:text-primary-600">
+                Ver todos
+              </Link>
+            </div>
+            {trabalhos.filter(t => ['aceito', 'em_andamento'].includes(t.status)).length === 0 ? (
+              <p className="text-gray-500 text-sm">Nenhum trabalho em andamento</p>
+            ) : (
+              <div className="space-y-3">
+                {trabalhos
+                  .filter(t => ['aceito', 'em_andamento'].includes(t.status))
+                  .slice(0, 10)
+                  .map((trabalho) => {
+                    const prazoDate = new Date(trabalho.prazo_entrega);
+                    const hoje = new Date();
+                    hoje.setHours(0, 0, 0, 0);
+                    const isAtrasado = prazoDate < hoje && trabalho.status !== 'concluido';
+                    
+                    return (
+                      <Link
+                        key={trabalho.id}
+                        href={`/trabalhos/${trabalho.id}`}
+                        className="block p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{trabalho.titulo}</p>
+                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                              <span>Responsável: {trabalho.responsavel?.name || 'N/A'}</span>
+                              {trabalho.elaborador && (
+                                <span>Elaborador: {trabalho.elaborador.name}</span>
+                              )}
+                              <span className={isAtrasado ? 'text-red-600 font-medium' : ''}>
+                                Prazo: {formatDate(trabalho.prazo_entrega)}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            trabalho.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                            trabalho.status === 'aceito' ? 'bg-blue-100 text-blue-800' :
+                            trabalho.status === 'em_andamento' ? 'bg-green-100 text-green-800' :
+                            'bg-orange-100 text-orange-800'
+                          }`}>
+                            {trabalho.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+
           {/* Trabalhos Recentes */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">

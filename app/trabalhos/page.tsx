@@ -20,6 +20,7 @@ export default function TrabalhosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -30,6 +31,17 @@ export default function TrabalhosPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Carregar perfil do usuário
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setCurrentUser(profile);
+      }
 
       const { data, error } = await supabase
         .from('trabalhos')
@@ -123,6 +135,60 @@ export default function TrabalhosPage() {
             </div>
           </div>
 
+          {/* Trabalhos em Andamento */}
+          {!loading && filteredTrabalhos.filter(t => ['aceito', 'em_andamento'].includes(t.status)).length > 0 && (
+            <div className="card mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Trabalhos em Andamento</h2>
+                <span className="text-sm text-gray-600">
+                  {filteredTrabalhos.filter(t => ['aceito', 'em_andamento'].includes(t.status)).length} trabalho(s)
+                </span>
+              </div>
+              <div className="space-y-3">
+                {filteredTrabalhos
+                  .filter(t => ['aceito', 'em_andamento'].includes(t.status))
+                  .slice(0, 5)
+                  .map((trabalho) => {
+                    const prazoDate = new Date(trabalho.prazo_entrega);
+                    const hoje = new Date();
+                    hoje.setHours(0, 0, 0, 0);
+                    const isAtrasado = prazoDate < hoje && trabalho.status !== 'concluido';
+                    
+                    return (
+                      <Link
+                        key={trabalho.id}
+                        href={`/trabalhos/${trabalho.id}`}
+                        className="block p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{trabalho.titulo}</p>
+                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                              <span className="capitalize">{trabalho.tipo}</span>
+                              <span className={isAtrasado ? 'text-red-600 font-medium' : ''}>
+                                Prazo: {formatDate(trabalho.prazo_entrega)}
+                              </span>
+                              {trabalho.elaborador && (
+                                <span>Elaborador: {trabalho.elaborador.name}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            trabalho.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                            trabalho.status === 'aceito' ? 'bg-blue-100 text-blue-800' :
+                            trabalho.status === 'em_andamento' ? 'bg-green-100 text-green-800' :
+                            'bg-orange-100 text-orange-800'
+                          }`}>
+                            {trabalho.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="card text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
@@ -177,25 +243,29 @@ export default function TrabalhosPage() {
                       >
                         Ver Detalhes
                       </Link>
-                      <Link
-                        href={`/trabalhos/${trabalho.id}/editar`}
-                        className="p-2 text-gray-400 hover:text-gray-600"
-                        title="Editar"
-                      >
-                        <Edit size={18} />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(trabalho.id)}
-                        disabled={deletingId === trabalho.id}
-                        className="p-2 text-gray-400 hover:text-red-600 disabled:opacity-50"
-                        title="Excluir"
-                      >
-                        {deletingId === trabalho.id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
-                        ) : (
-                          <Trash2 size={18} />
-                        )}
-                      </button>
+                      {(currentUser?.role === 'admin' || currentUser?.role === 'responsavel') && (
+                        <Link
+                          href={`/trabalhos/${trabalho.id}/editar`}
+                          className="p-2 text-gray-400 hover:text-gray-600"
+                          title="Editar"
+                        >
+                          <Edit size={18} />
+                        </Link>
+                      )}
+                      {(currentUser?.role === 'admin' || currentUser?.role === 'responsavel') && (
+                        <button
+                          onClick={() => handleDelete(trabalho.id)}
+                          disabled={deletingId === trabalho.id}
+                          className="p-2 text-gray-400 hover:text-red-600 disabled:opacity-50"
+                          title="Excluir"
+                        >
+                          {deletingId === trabalho.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+                          ) : (
+                            <Trash2 size={18} />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

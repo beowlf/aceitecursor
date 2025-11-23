@@ -200,6 +200,17 @@ export default function AceitePage() {
         .update({ status: 'aceito' })
         .eq('id', trabalhoId);
 
+      // Verificar se o usuário é responsável ou elaborador
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const descricaoAtividade = profile?.role === 'responsavel' 
+        ? 'Trabalho aceito pelo Responsável'
+        : 'Trabalho aceito pelo elaborador';
+
       // Registrar atividade
       await supabase
         .from('atividades')
@@ -207,7 +218,7 @@ export default function AceitePage() {
           trabalho_id: trabalhoId,
           usuario_id: user.id,
           tipo: 'aceite',
-          descricao: 'Trabalho aceito pelo elaborador',
+          descricao: descricaoAtividade,
           ip_address: ipAddress,
         });
 

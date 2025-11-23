@@ -41,6 +41,13 @@ export default function TrabalhoDetalhesPage() {
   const [atividades, setAtividades] = useState<Atividade[]>([]);
   const [currentUser, setCurrentUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showConcluirModal, setShowConcluirModal] = useState(false);
+  const [concluirForm, setConcluirForm] = useState({
+    antiplagio_enviado: false,
+    previa_enviada: false,
+    trabalho_final_enviado: false,
+  });
+  const [concluindo, setConcluindo] = useState(false);
   
   const supabase = createClient();
 
@@ -427,11 +434,27 @@ export default function TrabalhoDetalhesPage() {
                   <p className="text-gray-500 text-sm">Nenhuma atividade registrada</p>
                 ) : (
                   <div className="space-y-3">
-                    {atividades.map((atividade) => (
-                      <div key={atividade.id} className="flex items-start gap-3 pb-3 border-b last:border-0">
-                        <div className="w-2 h-2 rounded-full bg-primary-500 mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-900">{atividade.descricao}</p>
+                    {atividades.map((atividade) => {
+                      // Verificar se o trabalho foi aceito pelo responsável também
+                      let descricao = atividade.descricao;
+                      if (atividade.descricao === 'Trabalho aceito pelo elaborador' && trabalho.status === 'aceito') {
+                        // Verificar se o responsável também aceitou (verificar se há atividade de aceite do responsável)
+                        const aceiteResponsavel = atividades.find(a => 
+                          a.descricao === 'Trabalho aceito pelo Responsável' && 
+                          a.tipo === 'aceite' &&
+                          a.id !== atividade.id
+                        );
+                        if (aceiteResponsavel && new Date(aceiteResponsavel.created_at) >= new Date(atividade.created_at)) {
+                          // Se o responsável aceitou depois ou ao mesmo tempo, mostrar que foi aceito pelo responsável
+                          descricao = 'Trabalho aceito pelo Responsável';
+                        }
+                      }
+                      
+                      return (
+                        <div key={atividade.id} className="flex items-start gap-3 pb-3 border-b last:border-0">
+                          <div className="w-2 h-2 rounded-full bg-primary-500 mt-2"></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-900">{descricao}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-gray-500">
                               {atividade.usuario?.name || 'Usuário'}
@@ -443,7 +466,8 @@ export default function TrabalhoDetalhesPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -474,15 +498,35 @@ export default function TrabalhoDetalhesPage() {
                     </Link>
                   )}
                   {(trabalho.status === 'em_andamento' || trabalho.status === 'aguardando_correcao') && isElaborador && (
-                    <Link
-                      href={`/trabalhos/${trabalho.id}/entregar`}
-                      className="btn-primary w-full flex items-center justify-center gap-2"
-                    >
-                      <Upload size={18} />
-                      Fazer Entrega
-                    </Link>
+                    <>
+                      <Link
+                        href={`/trabalhos/${trabalho.id}/entregar`}
+                        className="btn-primary w-full flex items-center justify-center gap-2"
+                      >
+                        <Upload size={18} />
+                        Fazer Entrega
+                      </Link>
+                      {entregas.length > 0 && (
+                        <button
+                          onClick={() => setShowConcluirModal(true)}
+                          className="btn-secondary w-full flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle size={18} />
+                          Concluir Trabalho
+                        </button>
+                      )}
+                    </>
                   )}
-                  {isResponsavel && entregas.length > 0 && (
+                  {trabalho.status === 'aceito' && isElaborador && entregas.length > 0 && (
+                    <button
+                      onClick={() => setShowConcluirModal(true)}
+                      className="btn-secondary w-full flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle size={18} />
+                      Concluir Trabalho
+                    </button>
+                  )}
+                  {isResponsavel && entregas.length > 0 && trabalho.status !== 'concluido' && (
                     <Link
                       href={`/trabalhos/${trabalho.id}/correcao`}
                       className="btn-secondary w-full flex items-center justify-center gap-2"
@@ -512,6 +556,123 @@ export default function TrabalhoDetalhesPage() {
           </div>
         </main>
       </div>
+
+      {/* Modal Concluir Trabalho */}
+      {showConcluirModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Concluir Trabalho</h2>
+            <p className="text-gray-600 mb-4">
+              Confirme que você enviou todos os itens necessários:
+            </p>
+            
+            <div className="space-y-3 mb-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={concluirForm.antiplagio_enviado}
+                  onChange={(e) => setConcluirForm({ ...concluirForm, antiplagio_enviado: e.target.checked })}
+                  className="w-5 h-5 text-primary-500 rounded border-gray-300 focus:ring-primary-500"
+                />
+                <span className="text-gray-900">Relatório Anti-plágio enviado</span>
+              </label>
+              
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={concluirForm.previa_enviada}
+                  onChange={(e) => setConcluirForm({ ...concluirForm, previa_enviada: e.target.checked })}
+                  className="w-5 h-5 text-primary-500 rounded border-gray-300 focus:ring-primary-500"
+                />
+                <span className="text-gray-900">Prévia enviada</span>
+              </label>
+              
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={concluirForm.trabalho_final_enviado}
+                  onChange={(e) => setConcluirForm({ ...concluirForm, trabalho_final_enviado: e.target.checked })}
+                  className="w-5 h-5 text-primary-500 rounded border-gray-300 focus:ring-primary-500"
+                />
+                <span className="text-gray-900">Trabalho Final enviado</span>
+              </label>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowConcluirModal(false);
+                  setConcluirForm({
+                    antiplagio_enviado: false,
+                    previa_enviada: false,
+                    trabalho_final_enviado: false,
+                  });
+                }}
+                className="flex-1 btn-secondary"
+                disabled={concluindo}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!concluirForm.antiplagio_enviado || !concluirForm.trabalho_final_enviado) {
+                    alert('Por favor, confirme que enviou o relatório anti-plágio e o trabalho final.');
+                    return;
+                  }
+
+                  setConcluindo(true);
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+
+                    // Atualizar status do trabalho para concluído
+                    await supabase
+                      .from('trabalhos')
+                      .update({ status: 'concluido' })
+                      .eq('id', trabalhoId);
+
+                    // Registrar atividade
+                    await supabase
+                      .from('atividades')
+                      .insert({
+                        trabalho_id: trabalhoId,
+                        usuario_id: user.id,
+                        tipo: 'entrega',
+                        descricao: 'Trabalho concluído pelo elaborador',
+                        metadata: concluirForm,
+                      });
+
+                    // Criar notificação para o responsável
+                    if (trabalho?.responsavel_id) {
+                      await supabase
+                        .from('notificacoes')
+                        .insert({
+                          usuario_id: trabalho.responsavel_id,
+                          trabalho_id: trabalhoId,
+                          titulo: 'Trabalho Concluído',
+                          mensagem: `O trabalho "${trabalho.titulo}" foi concluído pelo elaborador.`,
+                        });
+                    }
+
+                    setShowConcluirModal(false);
+                    loadData();
+                    alert('Trabalho concluído com sucesso!');
+                  } catch (error: any) {
+                    console.error('Erro ao concluir trabalho:', error);
+                    alert('Erro ao concluir trabalho: ' + error.message);
+                  } finally {
+                    setConcluindo(false);
+                  }
+                }}
+                className="flex-1 btn-primary"
+                disabled={concluindo}
+              >
+                {concluindo ? 'Concluindo...' : 'Confirmar Conclusão'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
