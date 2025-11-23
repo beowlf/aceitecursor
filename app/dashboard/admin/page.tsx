@@ -96,6 +96,15 @@ export default function DashboardAdminPage() {
     ? Math.round((stats.trabalhosConcluidos / stats.totalTrabalhos) * 100)
     : 0;
 
+  // Calcular entregas da semana
+  const hoje = new Date();
+  const fimSemana = new Date(hoje);
+  fimSemana.setDate(hoje.getDate() + 7);
+  const entregasSemana = trabalhos.filter(t => {
+    const prazoDate = new Date(t.prazo_entrega);
+    return prazoDate >= hoje && prazoDate <= fimSemana && t.status !== 'concluido';
+  });
+
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -203,6 +212,56 @@ export default function DashboardAdminPage() {
               </div>
             </div>
           </div>
+
+          {/* Entrega da Semana */}
+          {entregasSemana.length > 0 && (
+            <div className="card mb-6 border-2 border-purple-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-purple-700">Entrega da Semana</h2>
+                <Link href="/trabalhos" className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  Ver todos
+                </Link>
+              </div>
+              <div className="space-y-3">
+                {entregasSemana.slice(0, 5).map((trabalho) => {
+                  const prazoDate = new Date(trabalho.prazo_entrega);
+                  const diasRestantes = Math.ceil((prazoDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  return (
+                    <Link
+                      key={trabalho.id}
+                      href={`/trabalhos/${trabalho.id}`}
+                      className="block p-3 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{trabalho.titulo}</p>
+                          <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                            <span className="capitalize">{trabalho.tipo}</span>
+                            <span className="font-medium text-purple-600">
+                              Prazo: {formatDate(trabalho.prazo_entrega)} ({diasRestantes} dia{diasRestantes > 1 ? 's' : ''})
+                            </span>
+                            <span>Responsável: {trabalho.responsavel?.name || 'N/A'}</span>
+                            {trabalho.elaborador && (
+                              <span>Elaborador: {trabalho.elaborador.name}</span>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          trabalho.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                          trabalho.status === 'aceito' ? 'bg-blue-100 text-blue-800' :
+                          trabalho.status === 'em_andamento' ? 'bg-green-100 text-green-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {trabalho.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Trabalhos em Andamento */}
           <div className="card mb-6">

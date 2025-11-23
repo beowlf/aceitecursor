@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
-import { TrabalhoTipo, Trabalho } from '@/types/database';
+import { TrabalhoTipo, TrabalhoPrioridade, TrabalhoStatusTrabalho, Trabalho } from '@/types/database';
 import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +29,9 @@ export default function EditarTrabalhoPage() {
     prazo_entrega: '',
     termos: '',
     observacoes: '',
+    prioridade: 'media' as TrabalhoPrioridade,
+    status_trabalho: 'normal' as TrabalhoStatusTrabalho,
+    quantidade_paginas: '' as string | number,
   });
 
   useEffect(() => {
@@ -61,6 +64,9 @@ export default function EditarTrabalhoPage() {
         prazo_entrega: prazoLocal,
         termos: data.termos,
         observacoes: data.observacoes || '',
+        prioridade: data.prioridade || 'media',
+        status_trabalho: data.status_trabalho || 'normal',
+        quantidade_paginas: data.quantidade_paginas || '',
       });
     } catch (error: any) {
       console.error('Erro ao carregar trabalho:', error);
@@ -87,6 +93,7 @@ export default function EditarTrabalhoPage() {
         .update({
           ...formData,
           prazo_entrega: new Date(formData.prazo_entrega).toISOString(),
+          quantidade_paginas: formData.quantidade_paginas ? parseInt(String(formData.quantidade_paginas)) : null,
         })
         .eq('id', trabalhoId);
 
@@ -156,7 +163,7 @@ export default function EditarTrabalhoPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo *
+                    Tipo de Trabalho *
                   </label>
                   <select
                     required
@@ -175,16 +182,64 @@ export default function EditarTrabalhoPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prazo de Entrega *
+                    Prioridade *
+                  </label>
+                  <select
+                    required
+                    value={formData.prioridade}
+                    onChange={(e) => setFormData({ ...formData, prioridade: e.target.value as TrabalhoPrioridade })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="media">Média</option>
+                    <option value="urgente">Urgente</option>
+                    <option value="alto">Alto</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status do Trabalho *
+                  </label>
+                  <select
+                    required
+                    value={formData.status_trabalho}
+                    onChange={(e) => setFormData({ ...formData, status_trabalho: e.target.value as TrabalhoStatusTrabalho })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="venda_do_dia">Venda do Dia</option>
+                    <option value="falta_pagamento">Falta Pagamento</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quantidade de Páginas
                   </label>
                   <input
-                    type="datetime-local"
-                    required
-                    value={formData.prazo_entrega}
-                    onChange={(e) => setFormData({ ...formData, prazo_entrega: e.target.value })}
+                    type="number"
+                    min="1"
+                    value={formData.quantidade_paginas}
+                    onChange={(e) => setFormData({ ...formData, quantidade_paginas: e.target.value ? parseInt(e.target.value) : '' })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Ex: 50"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prazo de Entrega *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={formData.prazo_entrega}
+                  onChange={(e) => setFormData({ ...formData, prazo_entrega: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
               </div>
 
               <div>

@@ -1,6 +1,8 @@
 export type UserRole = 'admin' | 'responsavel' | 'elaborador';
 export type TrabalhoTipo = 'tcc' | 'artigo' | 'mestrado' | 'doutorado' | 'monografia' | 'outro';
 export type TrabalhoStatus = 'pendente' | 'aceito' | 'em_andamento' | 'aguardando_correcao' | 'corrigido' | 'concluido' | 'cancelado';
+export type TrabalhoPrioridade = 'urgente' | 'media' | 'alto';
+export type TrabalhoStatusTrabalho = 'venda_do_dia' | 'falta_pagamento' | 'normal';
 export type AceiteStatus = 'pendente' | 'lido' | 'assinado' | 'aceito';
 export type AtividadeTipo = 'criacao' | 'aceite' | 'entrega' | 'correcao' | 'cancelamento' | 'atualizacao';
 
@@ -26,6 +28,9 @@ export interface Trabalho {
   tem_correcoes_obrigatorias: boolean;
   prazo_entrega: string;
   status: TrabalhoStatus;
+  prioridade?: TrabalhoPrioridade;
+  status_trabalho?: TrabalhoStatusTrabalho;
+  quantidade_paginas?: number;
   termos: string;
   observacoes?: string;
   created_at: string;

@@ -62,6 +62,17 @@ export default function TrabalhosPage() {
     trabalho.tipo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Calcular entregas da semana (apenas para responsável e administrador)
+  const hoje = new Date();
+  const fimSemana = new Date(hoje);
+  fimSemana.setDate(hoje.getDate() + 7);
+  const entregasSemana = (currentUser?.role === 'admin' || currentUser?.role === 'responsavel')
+    ? filteredTrabalhos.filter(t => {
+        const prazoDate = new Date(t.prazo_entrega);
+        return prazoDate >= hoje && prazoDate <= fimSemana && t.status !== 'concluido';
+      })
+    : [];
+
   async function handleDelete(id: string) {
     if (!confirm('Tem certeza que deseja excluir este trabalho? Esta ação não pode ser desfeita.')) {
       return;
@@ -134,6 +145,55 @@ export default function TrabalhosPage() {
               </button>
             </div>
           </div>
+
+          {/* Entrega da Semana - Apenas para Responsável e Administrador */}
+          {!loading && entregasSemana.length > 0 && (
+            <div className="card mb-6 border-2 border-blue-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-blue-700">Entrega da Semana</h2>
+                <span className="text-sm text-blue-600 font-medium">
+                  {entregasSemana.length} trabalho(s)
+                </span>
+              </div>
+              <div className="space-y-3">
+                {entregasSemana.slice(0, 5).map((trabalho) => {
+                  const prazoDate = new Date(trabalho.prazo_entrega);
+                  const diasRestantes = Math.ceil((prazoDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  return (
+                    <Link
+                      key={trabalho.id}
+                      href={`/trabalhos/${trabalho.id}`}
+                      className="block p-3 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{trabalho.titulo}</p>
+                          <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                            <span className="capitalize">{trabalho.tipo}</span>
+                            <span className="font-medium text-blue-600">
+                              Prazo: {formatDate(trabalho.prazo_entrega)} ({diasRestantes} dia{diasRestantes > 1 ? 's' : ''})
+                            </span>
+                            {trabalho.elaborador && (
+                              <span>Elaborador: {trabalho.elaborador.name}</span>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          trabalho.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                          trabalho.status === 'aceito' ? 'bg-blue-100 text-blue-800' :
+                          trabalho.status === 'em_andamento' ? 'bg-green-100 text-green-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {trabalho.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Trabalhos em Andamento */}
           {!loading && filteredTrabalhos.filter(t => ['aceito', 'em_andamento'].includes(t.status)).length > 0 && (
@@ -212,7 +272,7 @@ export default function TrabalhosPage() {
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <FileText size={16} />
                           <span className="capitalize">{trabalho.tipo}</span>
@@ -225,6 +285,31 @@ export default function TrabalhosPage() {
                           <User size={16} />
                           <span>{trabalho.responsavel?.name || 'N/A'}</span>
                         </div>
+                        {trabalho.quantidade_paginas && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <FileText size={16} />
+                            <span>{trabalho.quantidade_paginas} página{trabalho.quantidade_paginas > 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        {trabalho.prioridade && (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            trabalho.prioridade === 'urgente' ? 'bg-red-100 text-red-800' :
+                            trabalho.prioridade === 'alto' ? 'bg-orange-100 text-orange-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            Prioridade: {trabalho.prioridade === 'urgente' ? 'Urgente' : trabalho.prioridade === 'alto' ? 'Alto' : 'Média'}
+                          </span>
+                        )}
+                        {trabalho.status_trabalho && trabalho.status_trabalho !== 'normal' && (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            trabalho.status_trabalho === 'venda_do_dia' ? 'bg-green-100 text-green-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {trabalho.status_trabalho === 'venda_do_dia' ? 'Venda do Dia' : 'Falta Pagamento'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     

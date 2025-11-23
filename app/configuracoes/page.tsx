@@ -6,9 +6,13 @@ import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { Settings, Bell, Shield, Palette, Globe, Database, Save, Sun, Moon } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 
 export default function ConfiguracoesPage() {
   const { trabalhosSidebarOpen } = useSidebar();
+  const supabase = createClient();
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -35,7 +39,29 @@ export default function ConfiguracoesPage() {
       }));
       applyTheme(savedTheme);
     }
+    
+    // Carregar perfil do usuário
+    loadUser();
   }, []);
+
+  async function loadUser() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setCurrentUser(profile);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar usuário:', error);
+    }
+  }
 
   const applyTheme = (theme: string) => {
     const root = document.documentElement;
@@ -266,6 +292,28 @@ export default function ConfiguracoesPage() {
                 </div>
               </div>
             </div>
+
+            {/* Configurações de Trabalhos - Apenas para Admin e Responsável */}
+            {(currentUser?.role === 'admin' || currentUser?.role === 'responsavel') && (
+              <div className="card dark:bg-gray-800 dark:border-gray-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <Database className="text-primary-500" size={24} />
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Configurações de Trabalhos</h2>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Gerencie os valores disponíveis para Prioridade e Status do Trabalho
+                  </p>
+                  <Link
+                    href="/configuracoes/trabalhos"
+                    className="btn-secondary inline-flex items-center gap-2"
+                  >
+                    <Database size={18} />
+                    Gerenciar Configurações de Trabalhos
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end">
               <button onClick={handleSave} className="btn-primary flex items-center gap-2">

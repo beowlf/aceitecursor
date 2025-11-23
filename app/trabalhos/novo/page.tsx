@@ -6,7 +6,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import TrabalhosSidebar from '@/components/layout/TrabalhosSidebar';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
-import { TrabalhoTipo, Profile } from '@/types/database';
+import { TrabalhoTipo, TrabalhoPrioridade, TrabalhoStatusTrabalho, Profile } from '@/types/database';
 import { useSidebar } from '@/contexts/SidebarContext';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +30,9 @@ export default function NovoTrabalhoPage() {
     termos: '',
     observacoes: '',
     elaborador_id: '' as string | undefined,
+    prioridade: 'media' as TrabalhoPrioridade,
+    status_trabalho: 'normal' as TrabalhoStatusTrabalho,
+    quantidade_paginas: '' as string | number,
   });
 
   useEffect(() => {
@@ -91,6 +94,9 @@ export default function NovoTrabalhoPage() {
           responsavel_id: user.id,
           elaborador_id: formData.elaborador_id || null,
           status: 'pendente',
+          prioridade: formData.prioridade,
+          status_trabalho: formData.status_trabalho,
+          quantidade_paginas: formData.quantidade_paginas ? parseInt(String(formData.quantidade_paginas)) : null,
         })
         .select()
         .single();
@@ -145,7 +151,7 @@ export default function NovoTrabalhoPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo *
+                    Tipo de Trabalho *
                   </label>
                   <select
                     required
@@ -164,16 +170,64 @@ export default function NovoTrabalhoPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prazo de Entrega *
+                    Prioridade *
+                  </label>
+                  <select
+                    required
+                    value={formData.prioridade}
+                    onChange={(e) => setFormData({ ...formData, prioridade: e.target.value as TrabalhoPrioridade })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="media">Média</option>
+                    <option value="urgente">Urgente</option>
+                    <option value="alto">Alto</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status do Trabalho *
+                  </label>
+                  <select
+                    required
+                    value={formData.status_trabalho}
+                    onChange={(e) => setFormData({ ...formData, status_trabalho: e.target.value as TrabalhoStatusTrabalho })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="venda_do_dia">Venda do Dia</option>
+                    <option value="falta_pagamento">Falta Pagamento</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quantidade de Páginas
                   </label>
                   <input
-                    type="datetime-local"
-                    required
-                    value={formData.prazo_entrega}
-                    onChange={(e) => setFormData({ ...formData, prazo_entrega: e.target.value })}
+                    type="number"
+                    min="1"
+                    value={formData.quantidade_paginas}
+                    onChange={(e) => setFormData({ ...formData, quantidade_paginas: e.target.value ? parseInt(e.target.value) : '' })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Ex: 50"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prazo de Entrega *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={formData.prazo_entrega}
+                  onChange={(e) => setFormData({ ...formData, prazo_entrega: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
               </div>
 
               <div>
